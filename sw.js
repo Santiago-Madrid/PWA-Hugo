@@ -1,7 +1,6 @@
 const CACHE_NAME = "python-info-v1";
 const CACHE_OFFLINE = "python-offline-v1";
 
-// ✅ Rutas CORREGIDAS - apuntan a assets/icons/
 const STATIC_ASSETS = [
     "/",
     "/index.html",
@@ -14,7 +13,6 @@ const STATIC_ASSETS = [
     "/assets/icons/icon-512x512.png"
 ];
 
-// Estrategias de caché
 const CacheStrategies = {
     async cacheFirst(request) {
         const cached = await caches.match(request);
@@ -56,7 +54,6 @@ const CacheStrategies = {
     }
 };
 
-// Eventos del Service Worker
 self.addEventListener("install", (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -86,12 +83,10 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
     const url = new URL(event.request.url);
 
-    // API OMDb → Network First
     if (url.hostname === "www.omdbapi.com") {
         event.respondWith(CacheStrategies.networkFirst(event.request));
         return;
     }
 
-    // Assets estáticos → Cache First
     event.respondWith(CacheStrategies.cacheFirst(event.request));
 });
