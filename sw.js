@@ -1,7 +1,6 @@
 const CACHE_NAME = "python-info-v2";
 const CACHE_OFFLINE = "python-offline-v2";
 
-// ✅ Rutas CORREGIDAS - ahora relativas para GitHub Pages
 const STATIC_ASSETS = [
     "./",
     "./index.html",
@@ -15,7 +14,6 @@ const STATIC_ASSETS = [
     "./assets/icons/no-poster.png"
 ];
 
-// Estrategias de caché
 const CacheStrategies = {
     async cacheFirst(request) {
         const cached = await caches.match(request);
@@ -39,30 +37,9 @@ const CacheStrategies = {
             }
             return new Response("Sin conexión", { status: 503 });
         }
-    },
-
-    async networkFirst(request) {
-        try {
-            const networkResponse = await fetch(request);
-            if (networkResponse && networkResponse.status === 200) {
-                const cache = await caches.open(CACHE_OFFLINE);
-                cache.put(request, networkResponse.clone());
-            }
-            return networkResponse;
-        } catch {
-            const cached = await caches.match(request);
-            if (cached) return cached;
-            return new Response(JSON.stringify({ 
-                Response: "False", 
-                Error: "Sin conexión a Internet" 
-            }), {
-                headers: { "Content-Type": "application/json" }
-            });
-        }
     }
 };
 
-// Función helper para precachear con manejo de errores
 async function precacheAssets() {
     const cache = await caches.open(CACHE_NAME);
     const errors = [];
@@ -84,7 +61,6 @@ async function precacheAssets() {
     return cache;
 }
 
-// Eventos del Service Worker
 self.addEventListener("install", (event) => {
     console.log("[SW] Instalando...");
     event.waitUntil(
@@ -98,31 +74,30 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
     console.log("[SW] Activando...");
     event.waitUntil(
-        caches.keys().then((keys) =>
-            Promise.all(
+        caches.keys().then((keys) => {
+            return Promise.all(
                 keys
                     .filter((k) => k !== CACHE_NAME && k !== CACHE_OFFLINE)
                     .map((k) => {
                         console.log("[SW] Eliminando caché viejo:", k);
                         return caches.delete(k);
                     })
-            )
-        ).then(() => {
+            );
+        }).then(() => {
             console.log("[SW] Activación completa");
             return self.clients.claim();
         })
-        )
     );
 });
 
 self.addEventListener("fetch", (event) => {
     const url = new URL(event.request.url);
 
-    // API OMDb → pasar directamente sin SW (evitar conflictos de CORS)
+    // API OMDb -> pasar directamente sin SW
     if (url.hostname === "www.omdbapi.com" || url.hostname === "omdbapi.com") {
         return;
     }
 
-    // Assets estáticos → Cache First
+    // Assets estáticos -> Cache First
     event.respondWith(CacheStrategies.cacheFirst(event.request));
 });
