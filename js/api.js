@@ -2,10 +2,20 @@
 const ApiService = {
     async obtenerTodosPython() {
         console.log("[API] Iniciando consulta...");
-        mostrarCargando();
         
         try {
-            const url = `${CONFIG.BASE_URL}/?s=python&apikey=${CONFIG.API_KEY}`;
+            // Mostrar loading
+            const container = document.getElementById("result-container");
+            if (container) {
+                container.innerHTML = `
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Consultando la API OMDb<span class="dots">...</span></p>
+                    </div>
+                `;
+            }
+            
+            const url = `${CONFIG.BASE_URL}?s=python&apikey=${CONFIG.API_KEY}`;
             console.log("[API] URL:", url);
             
             const searchRes = await fetch(url);
@@ -23,6 +33,10 @@ const ApiService = {
 
             const items = searchData.Search || [];
             console.log("[API] Items encontrados:", items.length);
+            
+            if (items.length === 0) {
+                return [];
+            }
             
             // Obtener detalles con límite de concurrencia
             const detalles = await this._obtenerDetallesConLimite(items, 5);
@@ -53,7 +67,7 @@ const ApiService = {
 
     async _obtenerDetalle(imdbID) {
         try {
-            const url = `${CONFIG.BASE_URL}/?i=${imdbID}&plot=full&apikey=${CONFIG.API_KEY}`;
+            const url = `${CONFIG.BASE_URL}?i=${imdbID}&plot=full&apikey=${CONFIG.API_KEY}`;
             const detRes = await fetch(url);
             if (!detRes.ok) throw new Error(`HTTP ${detRes.status}`);
             return await detRes.json();

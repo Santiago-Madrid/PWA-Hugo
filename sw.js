@@ -14,90 +14,52 @@ const STATIC_ASSETS = [
     "./assets/icons/no-poster.png"
 ];
 
-const CacheStrategies = {
-    async cacheFirst(request) {
-        const cached = await caches.match(request);
-        if (cached) {
-            console.log("[SW] Cache HIT:", request.url);
-            return cached;
-        }
-
-        try {
-            const networkResponse = await fetch(request);
-            if (networkResponse && networkResponse.status === 200) {
-                const cache = await caches.open(CACHE_NAME);
-                cache.put(request, networkResponse.clone());
-                console.log("[SW] Cache MISS - guardado:", request.url);
-            }
-            return networkResponse;
-        } catch (error) {
-            console.log("[SW] Error fetch:", error.message);
-            if (request.mode === "navigate") {
-                return caches.match("./index.html");
-            }
-            return new Response("Sin conexión", { status: 503 });
-        }
-    }
-};
-
-async function precacheAssets() {
-    const cache = await caches.open(CACHE_NAME);
-    const errors = [];
-    
-    for (const url of STATIC_ASSETS) {
-        try {
-            await cache.add(url);
-            console.log("[SW] Precacheado:", url);
-        } catch (error) {
-            console.error("[SW] Error precacheando:", url, error);
-            errors.push(url);
-        }
-    }
-    
-    if (errors.length > 0) {
-        console.warn("[SW] Assets con errores:", errors);
-    }
-    
-    return cache;
-}
-
+// Instalación
 self.addEventListener("install", (event) => {
-    console.log("[SW] Instalando...");
     event.waitUntil(
-        precacheAssets().then(() => {
-            console.log("[SW] Instalación completa");
-            return self.skipWaiting();
-        })
+        caches.open(CACHE_NAME)
+            .then(cache => {
+                console.log("[SW] Cache abierto");
+                return cache.addAll(STATIC_ASSETS);
+            })
+            .then(() => self.skipWaiting())
     );
 });
 
+// Activación
 self.addEventListener("activate", (event) => {
-    console.log("[SW] Activando...");
     event.waitUntil(
-        caches.keys().then((keys) => {
+        caches.keys().then(cacheNames => {
             return Promise.all(
-                keys
-                    .filter((k) => k !== CACHE_NAME && k !== CACHE_OFFLINE)
-                    .map((k) => {
-                        console.log("[SW] Eliminando caché viejo:", k);
-                        return caches.delete(k);
-                    })
+                cacheNames.map(cacheName => {
+                    if (cacheName !== CACHE_NAME && cacheName !== CACHE_OFFLINE) {
+                        console.log("[SW] Eliminando cache antiguo:", cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
             );
-        }).then(() => {
-            console.log("[SW] Activación completa");
-            return self.clients.claim();
-        })
+        }).then(() => self.clients.claim())
     );
 });
 
+// Fetch - NO interceptar la API
 self.addEventListener("fetch", (event) => {
     const url = new URL(event.request.url);
 
-    // API OMDb -> pasar directamente sin SW
+    // ⚠️ NO interceptar peticiones a OMDb API
     if (url.hostname === "www.omdbapi.com" || url.hostname === "omdbapi.com") {
+        // Dejar pasar la solicitud sin intervención del SW
         return;
     }
 
-    // Assets estáticos -> Cache First
-    event.respondWith(CacheStrategies.cacheFirst(event.request));
+    // Para assets estáticos: Cache First
+    event.respondWith(
+        caches.match(event.request)
+            .then(response => {
+                if (response) {
+                    return response;
+                }
+                return fetch(event.request);
+            })
+    );
 });
