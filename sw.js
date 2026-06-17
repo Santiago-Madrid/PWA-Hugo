@@ -1,17 +1,17 @@
 const CACHE_NAME = "python-info-v1";
 const CACHE_OFFLINE = "python-offline-v1";
 
-// ✅ Rutas absolutas desde la raíz
+// ✅ Rutas CORREGIDAS - apuntan a assets/icons/
 const STATIC_ASSETS = [
     "/",
     "/index.html",
-    "/css/styles.css",
+    "/assets/css/styles.css",
     "/js/config.js",
     "/js/api.js",
     "/js/ui.js",
     "/js/main.js",
-    "/images/icon-192x192.png",
-    "/images/icon-512x512.png"
+    "/assets/icons/icon-192x192.png",
+    "/assets/icons/icon-512x512.png"
 ];
 
 // Estrategias de caché
@@ -94,4 +94,4 @@ self.addEventListener("fetch", (event) => {
 
     // Assets estáticos → Cache First
     event.respondWith(CacheStrategies.cacheFirst(event.request));
-}); 
+});

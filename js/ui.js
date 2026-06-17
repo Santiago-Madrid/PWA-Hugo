@@ -6,8 +6,8 @@ const UIManager = {
     },
 
     obtenerPosterSeguro(poster) {
-        // ✅ Si no hay poster, usa un icono existente
-        return poster && poster !== "N/A" ? poster : "./icons/icon-192x192.png";
+        // ✅ Si no hay poster, usa no-poster.png en assets/icons/
+        return poster && poster !== "N/A" ? poster : "./assets/icons/no-poster.png";
     },
 
     // Renderizado de tarjetas
@@ -30,7 +30,7 @@ const UIManager = {
         resultContainer.innerHTML = `<div class="cards-grid">${tarjetas}</div>`;
     },
 
-    // Vistas por categoría - ✅ TODAS con clase "vertical"
+    // Vistas por categoría
     mostrarInformacionGeneral(lista) {
         this.renderizarTarjetas(lista, (data) => `
             <div class="info-card vertical">
