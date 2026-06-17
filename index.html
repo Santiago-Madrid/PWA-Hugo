@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Python — OMDb Info Center</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#3d7a40">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PyCenter">
+
+    <!-- Iconos Apple -->
+    <link rel="apple-touch-icon" sizes="152x152" href="./assets/images/icon-192x192.png.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./assets/images/icon-192x192.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="96x96" href="./assets/images/icon-192x192.png.png">
+
+    <!-- SEO -->
+    <meta name="description" content="Explora todos los títulos de Python en la API OMDb">
+
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+    <header>
+        <!-- ✅ Agregado el terminal-prompt -->
+        <div class="terminal-prompt">python -c "import this"</div>
+        <h1><span>Python</span> Info Center</h1>
+        <p># Datos obtenidos en tiempo real desde la API OMDb</p>
+    </header>
+
+    <main>
+        <section id="menu-section">
+            <h2>Consultas disponibles</h2>
+            <div class="buttons-container">
+                <button id="general-btn">Información General</button>
+                <button id="cast-btn">Reparto</button>
+                <button id="production-btn">Producción</button>
+                <button id="ratings-btn">Calificaciones</button>
+                <button id="awards-btn">Premios</button>
+                <button id="plot-btn">Sinopsis</button>
+                <button id="clear-btn">Limpiar</button>
+            </div>
+        </section>
+
+        <section id="result-section">
+            <h2>Resultado</h2>
+            <div id="result-container">
+                <div class="welcome-card">
+                    <pre class="ascii-art">  ____        _   _
+ |  _ \ _   _| |_| |__   ___  _ __
+ | |_) | | | | __| '_ \ / _ \| '_ \
+ |  __/| |_| | |_| | | | (_) | | | |
+ |_|    \__, |\__|_| |_|\___/|_| |_|
+         |___/</pre>
+                    <h3>Bienvenido al Python Info Center</h3>
+                    <p>Explora <strong>todos</strong> los títulos relacionados con Python en OMDb.</p>
+                    <p class="hint"># Selecciona una categoría arriba para comenzar</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>OMDb API Project &mdash; <span>Python</span> &mdash; 2025</p>
+    </footer>
+
+    <script src="./js/config.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/ui.js"></script>
+    <script src="./js/main.js"></script>
+
+    <!-- Registro Service Worker -->
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker
+                    .register("./sw.js")
+                    .then((reg) => console.log("[PWA] SW registrado:", reg.scope))
+                    .catch((err) => console.warn("[PWA] SW falló:", err));
+            });
+        }
+    </script>
+
+</body>
+</html>
