@@ -1,23 +1,22 @@
-const CACHE_NAME = "python-info-v1";
-const CACHE_OFFLINE = "python-offline-v1";
-
+const CACHE_NAME = "python-info-v2";
+const CACHE_OFFLINE = "python-offline-v2";
+// ✅ Rutas CORREGIDAS - ahora relativas para GitHub Pages
 const STATIC_ASSETS = [
-    "/",
-    "/index.html",
-    "/css/styles.css",
-    "/js/config.js",
-    "/js/api.js",
-    "/js/ui.js",
-    "/js/main.js",
-    "/assets/icons/icon-192x192.png",
-    "/assets/icons/icon-512x512.png"
+    "./",
+    "./index.html",
+    "./css/styles.css",
+    "./js/config.js",
+    "./js/api.js",
+    "./js/ui.js",
+    "./js/main.js",
+    "./assets/icons/icon-192x192.png",
+    "./assets/icons/icon-512x512.png"
 ];
-
+// Estrategias de caché
 const CacheStrategies = {
     async cacheFirst(request) {
         const cached = await caches.match(request);
         if (cached) return cached;
-
         try {
             const networkResponse = await fetch(request);
             if (networkResponse && networkResponse.status === 200) {
@@ -27,12 +26,11 @@ const CacheStrategies = {
             return networkResponse;
         } catch {
             if (request.mode === "navigate") {
-                return caches.match("/index.html");
+                return caches.match("./index.html");
             }
             return new Response("Sin conexión", { status: 503 });
         }
     },
-
     async networkFirst(request) {
         try {
             const networkResponse = await fetch(request);
@@ -53,7 +51,7 @@ const CacheStrategies = {
         }
     }
 };
-
+// Eventos del Service Worker
 self.addEventListener("install", (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -63,7 +61,6 @@ self.addEventListener("install", (event) => {
     );
     self.skipWaiting();
 });
-
 self.addEventListener("activate", (event) => {
     event.waitUntil(
         caches.keys().then((keys) =>
@@ -79,14 +76,13 @@ self.addEventListener("activate", (event) => {
     );
     self.clients.claim();
 });
-
 self.addEventListener("fetch", (event) => {
     const url = new URL(event.request.url);
-
+    // API OMDb → Network First
     if (url.hostname === "www.omdbapi.com") {
         event.respondWith(CacheStrategies.networkFirst(event.request));
         return;
     }
-
+    // Assets estáticos → Cache First
     event.respondWith(CacheStrategies.cacheFirst(event.request));
 });
