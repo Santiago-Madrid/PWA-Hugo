@@ -5,7 +5,7 @@ const CACHE_OFFLINE = "python-offline-v1";
 const STATIC_ASSETS = [
     "/",
     "/index.html",
-    "/assets/css/styles.css",
+    "/css/styles.css",
     "/js/config.js",
     "/js/api.js",
     "/js/ui.js",
