@@ -1,80 +1,128 @@
-const CACHE_NAME = 'python-info-v1';
-const urlsToCache = [
-    './',
-    './index.html',
-    './css/styles.css',
-    './js/config.js',
-    './js/api.js',
-    './js/ui.js',
-    './js/main.js',
-    './manifest.json',
-    './assets/icons/icon-192x192.png',
-    './assets/icons/icon-512x512.png',
-    './assets/icons/no-poster.png'
+const CACHE_NAME = "python-info-v2";
+const CACHE_OFFLINE = "python-offline-v2";
+
+// ✅ Rutas CORREGIDAS - ahora relativas para GitHub Pages
+const STATIC_ASSETS = [
+    "./",
+    "./index.html",
+    "./css/styles.css",
+    "./js/config.js",
+    "./js/api.js",
+    "./js/ui.js",
+    "./js/main.js",
+    "./assets/icons/icon-192x192.png",
+    "./assets/icons/icon-512x512.png",
+    "./assets/icons/no-poster.png"
 ];
 
-// Instalación del Service Worker
-self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => {
-                console.log('[SW] Cache abierto');
-                return cache.addAll(urlsToCache);
-            })
-            .then(() => self.skipWaiting())
-    );
-});
+// Estrategias de caché
+const CacheStrategies = {
+    async cacheFirst(request) {
+        const cached = await caches.match(request);
+        if (cached) {
+            console.log("[SW] Cache HIT:", request.url);
+            return cached;
+        }
 
-// Activación del Service Worker
-self.addEventListener('activate', event => {
+        try {
+            const networkResponse = await fetch(request);
+            if (networkResponse && networkResponse.status === 200) {
+                const cache = await caches.open(CACHE_NAME);
+                cache.put(request, networkResponse.clone());
+                console.log("[SW] Cache MISS - guardado:", request.url);
+            }
+            return networkResponse;
+        } catch (error) {
+            console.log("[SW] Error fetch:", error.message);
+            if (request.mode === "navigate") {
+                return caches.match("./index.html");
+            }
+            return new Response("Sin conexión", { status: 503 });
+        }
+    },
+
+    async networkFirst(request) {
+        try {
+            const networkResponse = await fetch(request);
+            if (networkResponse && networkResponse.status === 200) {
+                const cache = await caches.open(CACHE_OFFLINE);
+                cache.put(request, networkResponse.clone());
+            }
+            return networkResponse;
+        } catch {
+            const cached = await caches.match(request);
+            if (cached) return cached;
+            return new Response(JSON.stringify({ 
+                Response: "False", 
+                Error: "Sin conexión a Internet" 
+            }), {
+                headers: { "Content-Type": "application/json" }
+            });
+        }
+    }
+};
+
+// Función helper para precachear con manejo de errores
+async function precacheAssets() {
+    const cache = await caches.open(CACHE_NAME);
+    const errors = [];
+    
+    for (const url of STATIC_ASSETS) {
+        try {
+            await cache.add(url);
+            console.log("[SW] Precacheado:", url);
+        } catch (error) {
+            console.error("[SW] Error precacheando:", url, error);
+            errors.push(url);
+        }
+    }
+    
+    if (errors.length > 0) {
+        console.warn("[SW] Assets con errores:", errors);
+    }
+    
+    return cache;
+}
+
+// Eventos del Service Worker
+self.addEventListener("install", (event) => {
+    console.log("[SW] Instalando...");
     event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('[SW] Eliminando cache antiguo:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
+        precacheAssets().then(() => {
+            console.log("[SW] Instalación completa");
+            return self.skipWaiting();
         })
-        .then(() => self.clients.claim())
     );
 });
 
-// Interceptar peticiones (estrategia: cache first, luego network)
-self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Si está en cache, devolverlo
-                if (response) {
-                    return response;
-                }
-
-                // Si no está en cache, ir a la red
-                return fetch(event.request)
-                    .then(response => {
-                        // Clonar la respuesta para guardarla en cache
-                        const responseToCache = response.clone();
-
-                        // Guardar en cache solo si es una petición GET exitosa
-                        if (event.request.method === 'GET' && response.status === 200) {
-                            caches.open(CACHE_NAME)
-                                .then(cache => {
-                                    cache.put(event.request, responseToCache);
-                                });
-                        }
-
-                        return response;
+self.addEventListener("activate", (event) => {
+    console.log("[SW] Activando...");
+    event.waitUntil(
+        caches.keys().then((keys) =>
+            Promise.all(
+                keys
+                    .filter((k) => k !== CACHE_NAME && k !== CACHE_OFFLINE)
+                    .map((k) => {
+                        console.log("[SW] Eliminando caché viejo:", k);
+                        return caches.delete(k);
                     })
-                    .catch(() => {
-                        // Si falla la red y no está en cache, mostrar mensaje de error
-                        return new Response('Error de conexión', {
-                            status: 503,
-                            statusText: 'Service Unavailable'
-                        });
-                    });
-            })
+            )
+        ).then(() => {
+            console.log("[SW] Activación completa");
+            return self.clients.claim();
+        })
+        )
     );
+});
+
+self.addEventListener("fetch", (event) => {
+    const url = new URL(event.request.url);
+
+    // API OMDb → pasar directamente sin SW (evitar conflictos de CORS)
+    if (url.hostname === "www.omdbapi.com" || url.hostname === "omdbapi.com") {
+        return;
+    }
+
+    // Assets estáticos → Cache First
+    event.respondWith(CacheStrategies.cacheFirst(event.request));
 });

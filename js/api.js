@@ -1,20 +1,28 @@
 // Servicio de API
 const ApiService = {
     async obtenerTodosPython() {
+        console.log("[API] Iniciando consulta...");
+        mostrarCargando();
+        
         try {
-            mostrarCargando();
+            const url = `${CONFIG.BASE_URL}/?s=python&apikey=${CONFIG.API_KEY}`;
+            console.log("[API] URL:", url);
             
-            const searchRes = await fetch(`${CONFIG.BASE_URL}?s=python&apikey=${CONFIG.API_KEY}`);
+            const searchRes = await fetch(url);
+            console.log("[API] Status:", searchRes.status);
+            
             if (!searchRes.ok) throw new Error(`HTTP ${searchRes.status}`);
             
             const searchData = await searchRes.json();
+            console.log("[API] Respuesta:", searchData);
             
             if (searchData.Response === "False") {
-                console.warn("OMDb:", searchData.Error);
+                console.warn("[API] OMDb Error:", searchData.Error);
                 return [];
             }
 
             const items = searchData.Search || [];
+            console.log("[API] Items encontrados:", items.length);
             
             // Obtener detalles con límite de concurrencia
             const detalles = await this._obtenerDetallesConLimite(items, 5);
@@ -22,7 +30,7 @@ const ApiService = {
             return detalles.filter(item => item !== null);
 
         } catch (error) {
-            console.error("Error al consultar la API:", error);
+            console.error("[API] Error al consultar:", error);
             return [];
         }
     },
@@ -45,13 +53,12 @@ const ApiService = {
 
     async _obtenerDetalle(imdbID) {
         try {
-            const detRes = await fetch(
-                `${CONFIG.BASE_URL}?i=${imdbID}&plot=full&apikey=${CONFIG.API_KEY}`
-            );
+            const url = `${CONFIG.BASE_URL}/?i=${imdbID}&plot=full&apikey=${CONFIG.API_KEY}`;
+            const detRes = await fetch(url);
             if (!detRes.ok) throw new Error(`HTTP ${detRes.status}`);
             return await detRes.json();
         } catch (error) {
-            console.error(`Error obteniendo detalle para ${imdbID}:`, error);
+            console.error(`[API] Error obteniendo detalle para ${imdbID}:`, error);
             return null;
         }
     }

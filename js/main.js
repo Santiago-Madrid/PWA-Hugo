@@ -3,7 +3,8 @@ class AppController {
     constructor() {
         this.pythonData = [];
         this.buttons = this._obtenerBotones();
-        this._inicializarEventos();
+        this._asignarEventosBotones();
+        this._cargarAplicacion();
     }
 
     _obtenerBotones() {
@@ -18,15 +19,7 @@ class AppController {
         };
     }
 
-    _inicializarEventos() {
-        document.addEventListener("DOMContentLoaded", () => this._cargarAplicacion());
-    }
-
-    async _cargarAplicacion() {
-        this.pythonData = await ApiService.obtenerTodosPython();
-        console.log(`${this.pythonData.length} resultados cargados:`, this.pythonData);
-
-        // Asignar eventos
+    _asignarEventosBotones() {
         this.buttons.general.addEventListener("click", () => UIManager.mostrarInformacionGeneral(this.pythonData));
         this.buttons.cast.addEventListener("click", () => UIManager.mostrarReparto(this.pythonData));
         this.buttons.production.addEventListener("click", () => UIManager.mostrarProduccion(this.pythonData));
@@ -49,9 +42,21 @@ class AppController {
             `;
         });
     }
+
+    async _cargarAplicacion() {
+        console.log("[App] Cargando datos de la API...");
+        try {
+            this.pythonData = await ApiService.obtenerTodosPython();
+            console.log(`[App] ${this.pythonData.length} resultados cargados:`, this.pythonData);
+        } catch (error) {
+            console.error("[App] Error cargando datos:", error);
+        }
+    }
 }
 
-// Iniciar aplicación
-document.addEventListener("DOMContentLoaded", () => {
-    const app = new AppController();
-});
+// Iniciar aplicación cuando el DOM esté listo
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => new AppController());
+} else {
+    new AppController();
+}
